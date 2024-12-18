@@ -8,15 +8,14 @@ use std::collections::*;
 ///
 /// 12/17/2024
 ///
-/// 22:11-
+/// 22:11-23:41 AC
 ///
 
 fn solve() -> i64 {
     // let n = 28;
     let n = 1371;
-    let mut ind = HashMap::new();
-    let mut g = HashMap::new();
-    let mut ord = HashMap::new();
+
+    let mut g: HashMap<i64, HashSet<i64>> = HashMap::new();
 
     let mut res = 0;
     let mut is_query = false;
@@ -26,37 +25,6 @@ fn solve() -> i64 {
         // dbgln!(s);
         if s.is_empty() {
             is_query = true;
-
-            let mut q = VecDeque::new();
-            let mut sorted = vec![];
-
-            for (&k, &v) in &ind {
-                if v == 0 {
-                    q.push_back(k);
-                    sorted.push(k);
-                }
-            }
-            dbgln!(ind);
-            assert!(!q.is_empty());
-
-            while let Some(u) = q.pop_front() {
-                sorted.push(u);
-                for &v in g.get(&u).unwrap_or(&vec![]) {
-                    let e = ind.get_mut(&v).unwrap();
-                    *e -= 1;
-                    if *e == 0 {
-                        q.push_back(v);
-                    }
-                }
-            }
-
-            // assert!(ind.is_empty());
-            dbgln!(sorted);
-            for i in 0..sorted.len() {
-                ord.insert(sorted[i], i);
-            }
-            dbgln!(ord);
-
             continue;
         }
 
@@ -66,19 +34,32 @@ fn solve() -> i64 {
                 .map(|n| n.parse::<i64>().unwrap())
                 .collect_vec();
 
-            for x in &a {
-                if !ord.contains_key(x) {
-                    dbgln!(a);
-                    dbgln!(x);
+            let s = a.clone();
+            let mut s = s.iter().collect::<HashSet<_>>();
+            let mut b = vec![];
+
+            while !s.is_empty() {
+                let mut found = None;
+                for &&n in &s {
+                    if s.iter().filter(|&&&m| m != n).all(|&m| {
+                        if let Some(vs) = g.get(&n) {
+                            vs.contains(m)
+                        } else {
+                            false
+                        }
+                    }) {
+                        found = Some(n);
+                        break;
+                    }
                 }
+
+                b.push(found.unwrap());
+                s.remove(&found.unwrap());
             }
 
-            let mut b = a.clone();
-            b.sort_by_key(|n| ord[n]);
-
             if a != b {
-                dbgln!(a);
-                dbgln!(b);
+                // dbgln!(a);
+                // dbgln!(b);
                 res += b[b.len() / 2];
             }
         } else {
@@ -87,12 +68,8 @@ fn solve() -> i64 {
                 .map(|n| n.parse::<i64>().unwrap())
                 .collect_vec();
 
-            ind.entry(p[0]).or_insert(0);
-            let e = ind.entry(p[1]).or_insert(0);
-            *e += 1;
-
-            let e = g.entry(p[0]).or_insert(vec![]);
-            e.push(p[1]);
+            let e = g.entry(p[0]).or_insert(HashSet::new());
+            e.insert(p[1]);
         }
     }
 

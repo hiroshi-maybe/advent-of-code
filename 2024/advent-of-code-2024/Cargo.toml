@@ -28,3 +28,7 @@ path = "day3part1.rs"
 name = "day3part2"
 path = "day3part2.rs"
 
+[[bin]]
+name = "day4part1"
+path = "day4part1.rs"
+

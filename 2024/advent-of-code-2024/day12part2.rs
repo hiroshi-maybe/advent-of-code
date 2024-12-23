@@ -2,19 +2,21 @@
 use std::cmp::*;
 use std::collections::*;
 
-// $ cp-batch day12part1 | diff day12part1.out -
-// $ cargo run --bin day12part1
+// $ cp-batch day12part2 | diff day12part2.out -
+// $ cargo run --bin day12part2
 
 ///
 /// 12/23/2024
 ///
-/// 11:29-11:49 AC
+/// 11:50-12:35 AC
 ///
 
+// vert x2, hor x2
 const MOVES: [(isize, isize); 4] = [(1, 0), (-1, 0), (0, 1), (0, -1)];
 
 fn solve() -> usize {
     let n = 140;
+    // let n = 10;
     let mut a = vec![];
     for _ in 0..n {
         let b = readln!([char]);
@@ -47,25 +49,53 @@ fn dfs(
     }
     viz[i][j] = true;
 
-    let (mut perimeter, mut area) = (0, 1);
-    for mo in MOVES {
-        let ii = i.wrapping_add_signed(mo.0);
-        let jj = j.wrapping_add_signed(mo.1);
+    let (mut side, mut area) = (0, 1);
+    for k in 0..MOVES.len() {
+        let mo = MOVES[k];
 
-        if ii < n && jj < m {
-            if a[ii][jj] != a[i][j] {
-                perimeter += 1;
+        if is_border(i, j, mo, n, m, a) {
+            let adj = if k < 2 {
+                (i, j.wrapping_add_signed(-1))
             } else {
-                let (p, a) = dfs(ii, jj, n, m, a, viz);
-                perimeter += p;
-                area += a;
+                (i.wrapping_add_signed(-1), j)
+            };
+
+            if adj.0 < n
+                && adj.1 < m
+                && a[i][j] == a[adj.0][adj.1]
+                && is_border(adj.0, adj.1, mo, n, m, a)
+            {
+                continue;
             }
+            // dbgln!(i, j, adj);
+            side += 1;
         } else {
-            perimeter += 1;
+            let ii = i.wrapping_add_signed(mo.0);
+            let jj = j.wrapping_add_signed(mo.1);
+            let (p, a) = dfs(ii, jj, n, m, a, viz);
+            side += p;
+            area += a;
         }
     }
 
-    (perimeter, area)
+    (side, area)
+}
+
+fn is_border(
+    i: usize,
+    j: usize,
+    mo: (isize, isize),
+    n: usize,
+    m: usize,
+    a: &Vec<Vec<char>>,
+) -> bool {
+    let ii = i.wrapping_add_signed(mo.0);
+    let jj = j.wrapping_add_signed(mo.1);
+    if ii < n && jj < m {
+        a[i][j] != a[ii][jj]
+    } else {
+        true
+    }
 }
 
 fn main() {

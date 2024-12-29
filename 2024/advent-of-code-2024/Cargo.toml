@@ -136,3 +136,7 @@ path = "day16part2.rs"
 name = "day17part1"
 path = "day17part1.rs"
 
+[[bin]]
+name = "day17part2"
+path = "day17part2.rs"
+

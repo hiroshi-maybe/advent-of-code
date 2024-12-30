@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+rand = "0.8.5"
+
 [[bin]]
 name = "day1"
 path = "day1.rs"
@@ -191,4 +193,8 @@ path = "day23part2.rs"
 [[bin]]
 name = "day24part1"
 path = "day24part1.rs"
+
+[[bin]]
+name = "day24part2"
+path = "day24part2.rs"
 

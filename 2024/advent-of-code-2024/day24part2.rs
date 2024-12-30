@@ -2,21 +2,100 @@
 use std::cmp::*;
 use std::collections::*;
 
-// $ cp-batch day24part1 | diff day24part1.out -
-// $ cargo run --bin day24part1
+// $ cp-batch day24part2 | diff day24part2.out -
+// $ cargo run --bin day24part2
 
 ///
 /// 12/29/2024
 ///
-/// 16:17-17:33 AC
+/// 19:46-21:05 AC
 ///
 
-fn solve() -> usize {
+/*
+
+Note:
+
+x00: 1
+x01: 0
+x02: 1
+x03: 1
+x04: 0
+x05: 0
+..
+x14: 0
+
+y00: 1
+y01: 0
+y02: 0
+y03: 1
+y04: 1
+y05: 0
+..
+y14: 0
+
+x00 XOR y00 -> z00 1
+x00 AND y00 -> jfw 0 (c00)
+
+y01 XOR x01 -> gnj 0
+jfw XOR gnj -> z01 0
+
+x01 AND y01 -> ntt 0
+gnj AND jfw -> spq 0
+
+--
+
+y14 XOR x14 -> dfb
+dfb XOR bfn -> hbk * (bfn = c14)
+sjr OR tck -> z14 *
+
+wjj OR scs -> bfn
+bfn AND dfb -> sjr
+y14 AND x14 -> tck
+
+--
+
+y23 XOR x23 -> rpg
+dvw XOR rpg -> dbb
+
+x23 AND y23 -> gcb
+dvw AND rpg -> z23
+
+--
+
+x34 XOR y34 -> tfn *
+mqf XOR cvh -> z34
+
+cht OR mkv -> mqf
+tfn OR trj -> cqv
+y34 AND x34 -> cvh *
+mqf AND cvh -> trj
+
+--
+
+x18 XOR y18 -> grp
+grp XOR fgr -> kvn *
+
+fgr AND grp -> ffb
+y18 AND x18 -> z18 *
+
+*/
+
+#[derive(Clone)]
+struct Gate {
+    op: String,
+    in1: String,
+    in2: String,
+    out: String,
+}
+
+fn solve() -> String {
     let mut vals = HashMap::new();
     let mut empty_line_num = 0;
-    let mut edges = HashMap::new();
-    let mut exp = HashMap::new();
-    let mut ind = HashMap::new();
+
+    let mut gates = vec![];
+    let swaps = vec![(6, 187), (35, 55), (180, 155), (84, 138)];
+    let mut res = vec![];
+
     loop {
         let s = readln_str();
         let s = s.trim_end();
@@ -30,26 +109,57 @@ fn solve() -> usize {
 
         if empty_line_num == 0 {
             let val = s.split(": ").collect_vec();
-            vals.insert(val[0].to_string(), val[1].parse::<usize>().unwrap());
+            let k = val[0].to_string();
+            let v = val[1].parse::<usize>().unwrap();
+            // use rand::prelude::*;
+            // let v = random::<usize>() % 2;
+            vals.insert(k, v);
             continue;
         }
 
         let opstr = s.split(" -> ").collect_vec();
         let input = opstr[0].split(' ').collect_vec();
-        let i1 = input[0].to_string();
-        let i2 = input[2].to_string();
+        let in1 = input[0].to_string();
+        let in2 = input[2].to_string();
         let op = input[1].to_string();
-        let o = opstr[1].to_string();
+        let out = opstr[1].to_string();
 
-        let e = edges.entry(i1.clone()).or_insert(vec![]);
-        e.push(o.clone());
-        let e = edges.entry(i2.clone()).or_insert(vec![]);
-        e.push(o.clone());
+        let gate = Gate { op, in1, in2, out };
+        gates.push(gate);
+    }
+
+    let mut edges = HashMap::new();
+    let mut exp = HashMap::new();
+    let mut ind = HashMap::new();
+
+    for (i, j) in swaps {
+        let out1 = gates[i].out.clone();
+        let out2 = gates[j].out.clone();
+        if let Some(g2) = gates.get_mut(j) {
+            g2.out = out1.clone();
+        }
+        if let Some(g1) = gates.get_mut(i) {
+            g1.out = out2.clone();
+        }
+        res.push(out1.clone());
+        res.push(out2.clone());
+    }
+
+    for g in &gates {
+        let op = &g.op;
+        let in1 = &g.in1;
+        let in2 = &g.in2;
+        let out = &g.out;
+
+        let e = edges.entry(in1.clone()).or_insert(vec![]);
+        e.push(out.clone());
+        let e = edges.entry(in2.clone()).or_insert(vec![]);
+        e.push(out.clone());
 
         assert!(exp
-            .insert(o.clone(), (op, i1.clone(), i2.clone()))
+            .insert(out.clone(), (op, in1.clone(), in2.clone()))
             .is_none());
-        assert!(ind.insert(o.clone(), 2).is_none());
+        assert!(ind.insert(out.clone(), 2).is_none());
     }
 
     let mut q = VecDeque::new();
@@ -83,13 +193,34 @@ fn solve() -> usize {
     zs.sort_unstable();
     dbgln!(zs.len());
 
-    let mut res = 0;
-    for (_, &b) in zs.iter().rev() {
-        res <<= 1;
-        res |= b;
+    let mut carry = 0;
+    for i in 0..zs.len() {
+        let mut s = i.to_string();
+        if s.len() == 1 {
+            s = "0".to_string() + &s;
+        }
+        let xkey = "x".to_string() + &s;
+        let ykey = "y".to_string() + &s;
+        let x = vals.get(&xkey).unwrap_or(&0);
+        let y = vals.get(&ykey).unwrap_or(&0);
+        let new_carry = (x & y) | (x & carry) | (carry & y);
+        let expected_z = x ^ y ^ carry;
+        println!(
+            "{i}, {} + {} + {} = {} (vs {}) (carry={}) {}",
+            x,
+            y,
+            carry,
+            expected_z,
+            zs[i].1,
+            new_carry,
+            if expected_z == *zs[i].1 { "" } else { "NG" }
+        );
+        carry = new_carry;
     }
+    // dbgln!(vals);
 
-    res
+    res.sort_unstable();
+    res.join(",")
 }
 
 fn operation(op: &str, i1: usize, i2: usize) -> usize {
